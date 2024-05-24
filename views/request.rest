@@ -1,0 +1,19 @@
+
+
+GET http://localhost:3001/try-post-form
+
+### 分隔線
+
+POST http://localhost:3001/try-post
+Content-Type: application/json
+
+{
+  "name":"Bob",
+  "age":30
+}
+
+### 分隔線
+POST http://localhost:3001/try-post
+Content-Type: application/x-www-form-urlencoded
+
+email=sss@kkk.com&name=小新
