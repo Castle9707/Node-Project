@@ -3,8 +3,10 @@
 
 import express from "express";
 import multer from "multer";
+import upload from "./utils/upload-imgs.js";
+import admin2Router from "./route/admin2.js";
 
-const upload = multer({ dest: "tmp_uploads/" });
+// const upload = multer({ dest: "tmp_uploads/" });
 
 const app = express();
 
@@ -16,10 +18,17 @@ app.use(express.urlencoded({ extended: true }));
 // 只會解析 application/json
 app.use(express.json());
 
+// 自訂頂層的 middleware
+app.use((req, res, next) => {
+  res.locals.title = "Bao的網頁";
+  next();
+});
+
 // routes
 // 設定路由, 只允許用 GET 拜訪
 app.get('/', (req, res) => {
   //res.send(`<h2>哈囉哈</h2>`); //send預設輸出是HTML
+  res.locals.title = "首頁 | " + res.locals.title;
   res.render("home", { name: "Bob" });
 });
 
@@ -69,6 +78,34 @@ app.post("/try-upload", upload.single('avatar'), (req, res) => {
   });
 });
 
+app.post("/try-uploads", upload.array('photos'), (req, res) => {
+  res.json(req.files);
+});
+
+// 嚴謹的路徑規則
+app.get("/my-params1/my", (req, res) => {
+  res.json(req.params);
+});
+
+// 寬鬆的路徑規則
+app.get("/my-params1/:action?/:id?", (req, res) => {
+  res.json(req.params);
+});
+
+app.get("/products/:pid", (req, res) => {
+  res.json(req.params.pid);
+});
+
+app.get(/^\/m\/09\d{2}-?\d{3}-?\d{3}$/i, (req, res) => {
+  let u = req.url.slice(3);
+  u = u.split('?')[0];
+  u = u.split('-').join('');
+  res.json({ u });
+});
+
+app.use("/admin2", admin2Router);
+
+// ************
 // 設定靜態內容資料夾
 app.use(express.static("public"));
 app.use("/bootstrap", express.static("node_modules/bootstrap/dist"));
