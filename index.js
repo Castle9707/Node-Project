@@ -9,6 +9,9 @@ import session from "express-session";
 import moment from "moment-timezone";
 import db from "./utils/connect-mysql.js";
 import abRouter from "./route/address-book.js";
+import cors from "cors";
+import mysql_session from "express-mysql-session";
+import bcrypt from "bcrypt";
 
 // const upload = multer({ dest: "tmp_uploads/" });
 
@@ -22,11 +25,24 @@ app.use(express.urlencoded({ extended: true }));
 // 只會解析 application/json
 app.use(express.json());
 
+const corsOptions = {
+  credentials: true,
+  origin: (origin, callback) => {
+    console.log({ origin });
+    callback(null, true); // 全部都允許
+  }
+};
+app.use(cors(corsOptions));
+
+const MysqlStore = mysql_session(session);
+const sessionStore = new MysqlStore({}, db);
+
 app.use(
   session({
     saveUninitialized: false,
     resave: false, // 未變更內容是否強制回存
     secret: "vfdfKJGGcpp5fdfMOO",
+    store: sessionStore,
     /*
     cookie:{
       maxAge: 1800_000;
@@ -38,6 +54,8 @@ app.use(
 // 自訂頂層的 middleware
 app.use((req, res, next) => {
   res.locals.title = "Bao的網頁";
+  res.locals.session = req.session; // 讓 template 可以使用 session
+
   next();
 });
 
@@ -170,6 +188,48 @@ app.get("/try-db", async (req, res) => {
 
   const [results, fields] = await db.query(sql);
   res.json({ results, fields });
+});
+
+app.get("/login", async (req, res) => {
+  res.render("login");
+});
+app.post("/login", upload.none(), async (req, res) => {
+  //res.json(req.body);
+  const output = {
+    success: false,
+    code: 0,
+    body: req.body,
+  };
+
+  const sql = "SELECT * FROM members WHERE email=?";
+  const [rows] = await db.query(sql, [req.body.email]);
+
+  if (!rows.length) {
+    // 帳號是錯的
+    output.code = 400;
+    return res.json(output);
+  }
+
+  const result = await bcrypt.compare(req.body.password, rows[0].password);
+  if (!result) {
+    //密碼是錯的
+    output.code = 400;
+    return res.json(output);
+  }
+  output.success = true;
+
+  req.session.admin = {
+    id: rows[0].id,
+    email: rows[0].email,
+    nickname: rows[0].nickname,
+  }
+
+  res.json(output);
+});
+
+app.get("/logout", (req, res) => {
+  delete req.session.admin;
+  res.redirect("/");
 });
 
 // ************
