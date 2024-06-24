@@ -1,6 +1,7 @@
 // console.log(process.env.DB_HOST);
 // console.log(process.env.DB_USER);
 
+import jwt from "jsonwebtoken";
 import express from "express";
 import multer from "multer";
 import upload from "./utils/upload-imgs.js";
@@ -28,7 +29,7 @@ app.use(express.json());
 const corsOptions = {
   credentials: true,
   origin: (origin, callback) => {
-    console.log({ origin });
+    //console.log({ origin });
     callback(null, true); // 全部都允許
   }
 };
@@ -230,6 +231,30 @@ app.post("/login", upload.none(), async (req, res) => {
 app.get("/logout", (req, res) => {
   delete req.session.admin;
   res.redirect("/");
+});
+
+app.get("/jwt1", (req, res) => {
+  const data = {
+    id: 17,
+    account: "shin"
+  };
+
+  const token = jwt.sign(data, process.env.JWT_KEY);
+  res.send(token);
+});
+
+app.get("/jwt2", (req, res) => {
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTcsImFjY291bnQiOiJzaGluIiwiaWF0IjoxNzE5MTk0NzU5fQ.7NcI-s0O_BWnEdzhoVacSUOeKH6bEdloYnkaqY1kvf8";
+
+  let payload = {};
+  try {
+    payload = jwt.verify(token, process.env.JWT_KEY)
+  } catch (ex) {
+    //如果token是無效的
+    payload = { ex }
+  }
+
+  res.send(payload);
 });
 
 // ************
