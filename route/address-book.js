@@ -76,6 +76,15 @@ const getListData = async (req) => {
   };
 };
 
+//模擬網路延遲
+// router.use((req, res, next) => {
+//   const ms = 100 + Math.floor(Math.random() * 2000);
+//   setTimeout(() => {
+//     next();
+//   }, ms);
+// });
+
+
 // middleware
 router.use((req, res, next) => {
   let u = req.url.split("?")[0];
