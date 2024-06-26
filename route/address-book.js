@@ -84,7 +84,7 @@ const getListData = async (req) => {
 //   }, ms);
 // });
 
-
+/*
 // middleware
 router.use((req, res, next) => {
   let u = req.url.split("?")[0];
@@ -99,6 +99,7 @@ router.use((req, res, next) => {
     res.redirect("/login");
   }
 });
+*/
 
 router.get("/", async (req, res) => {
   res.locals.title = "通訊錄列表 | " + res.locals.title;
@@ -210,6 +211,23 @@ router.get("/edit/:sid", async (req, res) => {
   res.render("address-book/edit", rows[0]);
 });
 
+// 取得單項資料的 API
+router.get("/api/:sid", async (req, res) => {
+  const sid = +req.params.sid || 0;
+  if (!sid) {
+    return res.json({ success: false, error: "沒有編號" });
+  }
+  const sql = `SELECT * FROM address_book WHERE sid=${sid}`;
+  const [rows] = await db.query(sql);
+  if (!rows.length) {
+    // 沒有該筆資料
+    return res.json({ success: false, error: "沒有該筆資料" });
+  }
+  const m = moment(rows[0].birthday);
+  rows[0].birthday = m.isValid() ? m.format(dateFormat) : '';
+  res.json({ success: true, data: rows[0] });
+});
+
 //處理編輯的表單
 router.put("/api/:sid", upload.none(), async (req, res) => {
   const output = {
@@ -222,9 +240,14 @@ router.put("/api/:sid", upload.none(), async (req, res) => {
   if (!sid) {
     return res.json(output);
   }
+
+  let body = { ...req.body }
+  const m = moment(body.birthday);
+  body.birthday = m.isValid() ? m.format(dateFormat) : null;
+
   try {
     const sql = "UPDATE `address_book` SET ? WHERE sid=? ";
-    const [result] = await db.query(sql, [req.body, sid]);
+    const [result] = await db.query(sql, [body, sid]);
     output.result = result;
     output.success = !!(result.affectedRows && result.changedRows);
   } catch (ex) {
