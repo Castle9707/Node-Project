@@ -278,6 +278,7 @@ app.post("/login-jwt", async (req, res) => {
     email: rows[0].email,
     nickname: rows[0].nickname,
     token,
+    //role: "admin"
   };
   res.json(output);
 });
